@@ -8,8 +8,7 @@ const client = new Client({
   puppeteer: { headless: false },
   webVersionCache: {
     type: "remote",
-    remotePath:
-      "https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html",
+    remotePath: "https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html",
   },
 });
 
@@ -20,7 +19,6 @@ client.on('qr', qr => {
 client.on('ready', async () => {
     console.log('Client is ready!');
     const fileStream = fs.createReadStream('telp.txt');
-
     const rl = readline.createInterface({
         input: fileStream,
         crlfDelay: Infinity
@@ -29,12 +27,21 @@ client.on('ready', async () => {
     const liveNumbers = [];
 
     for await (const number of rl) {
-        const numberId = await client.getNumberId(number.trim());
-        if (numberId) {
-            console.log(`${number} is registered on WhatsApp.`);
-            liveNumbers.push(number);
-        } else {
-            console.log(`${number} is not registered on WhatsApp.`);
+        let trimmedNumber = number.trim();
+        try {
+            let numberId = await client.getNumberId(trimmedNumber);
+            if (!numberId && trimmedNumber.slice(0, 2) !== '44') { // Check if it doesn't start with 44
+                trimmedNumber = '44' + trimmedNumber; // Prepend '44' to the number
+                numberId = await client.getNumberId(trimmedNumber); // Try again with the new number
+            }
+            if (numberId) {
+                console.log(`${trimmedNumber} is registered on WhatsApp.`);
+                liveNumbers.push(trimmedNumber);
+            } else {
+                console.log(`${trimmedNumber} is not registered on WhatsApp.`);
+            }
+        } catch (error) {
+            console.error(`Error retrieving WhatsApp ID for ${trimmedNumber}:`, error);
         }
     }
 
