@@ -4,7 +4,19 @@ const cron = require('node-cron');
 
 const client = new Client({
   authStrategy: new LocalAuth(),
-  puppeteer: { headless: false }
+  puppeteer: {
+    headless: true, // Diatur ke true untuk mode headless
+    args: [
+      '--no-sandbox', // Opsional, tetapi dianjurkan untuk lingkungan development/test
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage', // Mengatasi masalah memori di Docker atau sistem berbasis Linux
+      '--disable-accelerated-2d-canvas',
+      '--no-first-run',
+      '--no-zygote',
+      '--disable-gpu',
+      '--disable-extensions'
+    ]
+  }
 });
 
 client.on('qr', (qr) => {
@@ -29,7 +41,6 @@ async function sendPaymentReminder() {
   try {
     const response = await axios.get('http://127.0.0.1:8000/api/reminder/payment');
     const message = response.data.message_reminder_payment;
-    // Asumsi Anda memiliki API untuk mendapatkan pelanggan yang perlu pengingat
     const customersResponse = await axios.get('http://127.0.0.1:8000/api/customers-reminder');
     const customers = customersResponse.data;
 
@@ -52,7 +63,6 @@ async function sendAutoIsolirMessage() {
   try {
     const response = await axios.get('http://127.0.0.1:8000/api/message/disposisi');
     const message = response.data.message_disposisi;
-    // Asumsi Anda memiliki API untuk mendapatkan pelanggan untuk isolir
     const customersResponse = await axios.get('http://127.0.0.1:8000/api/customers-disposisi');
     const customers = customersResponse.data;
 
