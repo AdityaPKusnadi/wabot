@@ -5,38 +5,46 @@ const cron = require('node-cron');
 const client = new Client({
   authStrategy: new LocalAuth(),
   puppeteer: {
-    headless: true, // Diatur ke true untuk mode headless
+    headless: false, // Set to true for headless mode
     args: [
-      '--no-sandbox', // Opsional, tetapi dianjurkan untuk lingkungan development/test
+      '--no-sandbox',
       '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage', // Mengatasi masalah memori di Docker atau sistem berbasis Linux
+      '--disable-dev-shm-usage',
       '--disable-accelerated-2d-canvas',
       '--no-first-run',
       '--no-zygote',
       '--disable-gpu',
-      '--disable-extensions'
+      '--disable-extensions',
+      '--single-process', // Mungkin membantu mengurangi penggunaan memori
+      '--disable-background-timer-throttling' // Mencegah Chromium menghentikan background timer secara agresif
     ]
+  },
+  // Use a remote file to define the web version to overcome update issues
+  webVersionCache: {
+    type: "remote",
+    remotePath: "https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html",
   }
 });
 
 client.on('qr', (qr) => {
+  // Display QR code in the console for testing purposes
   console.log('QR RECEIVED', qr);
 });
 
 client.on('ready', () => {
   console.log('Client is ready!');
-  // Menjalankan fungsi pengingat pembayaran setiap tanggal 15
+  // Run payment reminder function every 15th of the month
   cron.schedule('0 0 15 * *', () => {
     sendPaymentReminder().catch(console.error);
   });
 
-  // Menjalankan fungsi auto isolir setiap tanggal 21 jam 00:00
+  // Run auto isolir function every 21st at 00:00
   cron.schedule('0 0 21 * *', () => {
     sendAutoIsolirMessage().catch(console.error);
   });
 });
 
-// Fungsi untuk mengirim pesan pengingat pembayaran
+// Function to send payment reminders
 async function sendPaymentReminder() {
   try {
     const response = await axios.get('http://127.0.0.1:8000/api/reminder/payment');
@@ -58,7 +66,7 @@ async function sendPaymentReminder() {
   }
 }
 
-// Fungsi untuk mengirim pesan auto isolir
+// Function to send auto isolir messages
 async function sendAutoIsolirMessage() {
   try {
     const response = await axios.get('http://127.0.0.1:8000/api/message/disposisi');
